@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سینمای دونفره | Private Watch Party</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PeerJS CDN برای ارتباط امن P2P -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <!-- Vazirmatn Font -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 p-4 text-center shadow-lg">
+        <h1 class="text-xl font-bold bg-gradient-to-r from-rose-500 to-purple-600 bg-clip-text text-transparent">سینمای اختصاصی پاتوق ❤️</h1>
+        <p class="text-xs text-slate-400 mt-1">ارتباط امن، مستقیم و دونفره</p>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-4xl w-full mx-auto p-4 flex flex-col gap-6">
+
+        <!-- Connection Panel -->
+        <div id="setup-panel" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col gap-4">
+            <h2 class="text-lg font-semibold text-rose-400">تنظیم اتصال</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Host Box -->
+                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-medium text-sm text-slate-300 mb-2">ساخت اتاق (میزبان)</h3>
+                        <p class="text-xs text-slate-500 mb-4">یک کد دلخواه یا پین‌کد وارد کنید و به پارتنرتان بدهید.</p>
+                        <input type="text" id="host-id-input" placeholder="مثال: love-room-1405" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-rose-500 mb-3">
+                    </div>
+                    <button onclick="startHosting()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-2 rounded-lg text-sm transition shadow-md shadow-rose-900/40">ایجاد اتاق</button>
+                </div>
+
+                <!-- Guest Box -->
+                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-medium text-sm text-slate-300 mb-2">پیوستن به اتاق (مهمان)</h3>
+                        <p class="text-xs text-slate-500 mb-4">کد اتاقی که پارتنرتان ساخته را اینجا وارد کنید.</p>
+                        <input type="text" id="peer-id-input" placeholder="کد اتاق پارتنر..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-purple-500 mb-3">
+                    </div>
+                    <button onclick="connectToPeer()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 rounded-lg text-sm transition shadow-md shadow-purple-900/40">اتصال به پارتنر</button>
+                </div>
+            </div>
+
+            <div id="connection-status" class="text-center text-xs text-slate-400 mt-2 py-1 bg-slate-950/40 rounded-lg">وضعیت: قطع شده 🔌</div>
+        </div>
+
+        <!-- Theater Panel (Hidden until connected) -->
+        <div id="theater-panel" class="hidden flex flex-col gap-4">
+            
+            <!-- Host File Picker (Only visible to host if needed, or controls) -->
+            <div id="host-controls" class="hidden bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <label class="bg-gradient-to-r from-rose-600 to-pink-600 hover:opacity-90 text-white px-4 py-2 rounded-xl text-sm font-medium cursor-pointer shadow-md transition flex items-center gap-2">
+                        📁 انتخاب فیلم از گوشی
+                        <input type="file" id="video-file-input" accept="video/*" class="hidden">
+                    </label>
+                    <span id="file-name-display" class="text-xs text-slate-400 truncate max-w-xs">فایلی انتخاب نشده است</span>
+                </div>
+                <div class="text-xs text-emerald-400 bg-emerald-950/50 border border-emerald-900 px-3 py-1.5 rounded-lg">شما میزبان هستید (پخش‌کننده اصلی)</div>
+            </div>
+
+            <div id="guest-notice" class="hidden text-xs text-purple-400 bg-purple-950/50 border border-purple-900 px-3 py-2 rounded-xl text-center">
+                شما به عنوان مهمان متصل شده‌اید. فیلم به زودی توسط میزبان پخش خواهد شد ✨
+            </div>
+
+            <!-- Video Player Container -->
+            <div class="relative w-full bg-black rounded-2xl overflow-hidden shadow-2xl border border-slate-800 aspect-video flex items-center justify-center">
+                <video id="media-player" controls playsinline class="w-full h-full object-contain"></video>
+            </div>
+
+            <!-- Chat / Interaction Box -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3">
+                <h3 class="text-xs font-semibold text-slate-300">چت دونفره امن</h3>
+                <div id="chat-messages" class="h-28 overflow-y-auto bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex flex-col gap-2 text-xs">
+                    <div class="text-slate-500 text-center">ارتباط چت آماده است...</div>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="chat-input" placeholder="پیام خود را بنویسید..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-rose-500" onkeypress="handleChatKey(event)">
+                    <button onclick="sendChatMessage()" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl text-xs font-medium transition">ارسال</button>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-slate-600">
+        ساخته شده با عشق برای تماشای دورهمی ❤️
+    </footer>
+
+    <!-- App Logic Script -->
+    <script>
+        let peer;
+        let conn;
+        let localStream = null;
+        let currentPeerId = null;
+        let isHost = false;
+
+        const statusEl = document.getElementById('connection-status');
+        const setupPanel = document.getElementById('setup-panel');
+        const theaterPanel = document.getElementById('theater-panel');
+        const hostControls = document.getElementById('host-controls');
+        const guestNotice = document.getElementById('guest-notice');
+        const mediaPlayer = document.getElementById('media-player');
+        const fileInput = document.getElementById('video-file-input');
+        const fileNameDisplay = document.getElementById('file-name-display');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+
+        function updateStatus(text, colorClass = 'text-slate-400') {
+            statusEl.className = `text-center text-xs mt-2 py-1 bg-slate-950/40 rounded-lg ${colorClass}`;
+            statusEl.innerText = `وضعیت: ${text}`;
+        }
+
+        function startHosting() {
+            const customId = document.getElementById('host-id-input').value.trim();
+            if (!customId) {
+                alert('لطفاً یک کد یا نام برای اتاق وارد کنید.');
+                return;
+            }
+
+            isHost = true;
+            updateStatus('در حال راه‌اندازی اتاق...', 'text-yellow-400');
+
+            // ساخت Peer با یک پیشوند اختصاصی برای جلوگیری از تداخل
+            peer = new Peer('private-cinema-' + customId);
+
+            peer.on('open', (id) => {
+                updateStatus(`اتاق با موفقیت ساخته شد! کد اتاق را به پارتنرتان بدهید: ${customId}`, 'text-emerald-400');
+                setupPanel.classList.add('hidden');
+                theaterPanel.classList.remove('hidden');
+                hostControls.classList.remove('hidden');
+            });
+
+            peer.on('connection', (connection) => {
+                conn = connection;
+                setupDataConnection();
+                appendSystemMessage('پارتنر شما به اتاق متصل شد! ❤️');
+            });
+
+            peer.on('call', (call) => {
+                // میزبان کال دریافت نمی‌کند، مهمان کال دریافت می‌کند
+                call.answer();
+            });
+
+            peer.on('error', (err) => {
+                alert('خطا در اتصال: ' + err.type);
+                updateStatus('خطا در اتصال', 'text-rose-500');
+            });
+        }
+
+        function connectToPeer() {
+            const remoteId = document.getElementById('peer-id-input').value.trim();
+            if (!remoteId) {
+                alert('لطفاً کد اتاق پارتنرتان را وارد کنید.');
+                return;
+            }
+
+            isHost = false;
+            updateStatus('در حال اتصال به اتاق پارتنر...', 'text-yellow-400');
+
+            // ایجاد یک peer تصادفی برای مهمان
+            peer = new Peer();
+
+            peer.on('open', (id) => {
+                currentPeerId = 'private-cinema-' + remoteId;
+                
+                // برقراری ارتباط داده (Data Connection)
+                conn = peer.connect(currentPeerId);
+                setupDataConnection();
+
+                // برقراری تماس صوتی/تصویری (Media Stream Call)
+                const call = peer.call(currentPeerId, new MediaStream());
+                
+                call.on('stream', (remoteStream) => {
+                    mediaPlayer.srcObject = remoteStream;
+                    mediaPlayer.play().catch(e => console.log("Auto-play blocked:", e));
+                });
+
+                setupPanel.classList.add('hidden');
+                theaterPanel.classList.remove('hidden');
+                guestNotice.classList.remove('hidden');
+                updateStatus('به پارتنرتان متصل شدید! ✨', 'text-emerald-400');
+                appendSystemMessage('به اتاق متصل شدید.');
+            });
+
+            peer.on('error', (err) => {
+                alert('اتاق پیدا نشد یا کد اشتباه است.');
+                updateStatus('خطا در اتصال به اتاق', 'text-rose-500');
+            });
+        }
+
+        function setupDataConnection() {
+            conn.on('open', () => {
+                console.log('Data connection established');
+            });
+
+            conn.on('data', (data) => {
+                if (data.type === 'chat') {
+                    appendChatMessage('پارتنر', data.message, 'text-purple-400');
+                } else if (data.type === 'sync' && !isHost) {
+                    // همگام‌سازی کنترل‌های پخش برای مهمان
+                    if (data.action === 'play') mediaPlayer.play();
+                    if (data.action === 'pause') mediaPlayer.pause();
+                    if (data.action === 'seek') mediaPlayer.currentTime = data.time;
+                }
+            });
+        }
+
+        // مدیریت انتخاب فایل توسط میزبان
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            fileNameDisplay.innerText = file.name;
+            const fileURL = URL.createObjectURL(file);
+            mediaPlayer.src = fileURL;
+            mediaPlayer.load();
+
+            // گرفتن استریم ویدیویی از تگ ویدیو برای ارسال به پارتنر
+            setTimeout(() => {
+                if (mediaPlayer.captureStream) {
+                    localStream = mediaPlayer.captureStream();
+                } else if (mediaPlayer.mozCaptureStream) {
+                    localStream = mediaPlayer.mozCaptureStream();
+                }
+
+                // وقتی مهمان تماس برقرار کرد یا متصل شد، استریم را ارسال می‌کنیم
+                peer.on('call', (call) => {
+                    call.answer(localStream);
+                });
+            }, 500);
+        });
+
+        // همگام‌سازی کنترل‌های پخش میزبان با مهمان
+        if (isHost) {
+            mediaPlayer.addEventListener('play', () => {
+                if (conn && conn.open) conn.send({ type: 'sync', action: 'play' });
+            });
+            mediaPlayer.addEventListener('pause', () => {
+                if (conn && conn.open) conn.send({ type: 'sync', action: 'pause' });
+            });
+            mediaPlayer.addEventListener('seeked', () => {
+                if (conn && conn.open) conn.send({ type: 'sync', action: 'seek', time: mediaPlayer.currentTime });
+            });
+        }
+
+        // چت درون‌برنامه‌ای
+        function sendChatMessage() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            appendChatMessage('شما', text, 'text-rose-400');
+            if (conn && conn.open) {
+                conn.send({ type: 'chat', message: text });
+            }
+            chatInput.value = '';
+        }
+
+        function handleChatKey(e) {
+            if (e.key === 'Enter') sendChatMessage();
+        }
+
+        function appendChatMessage(sender, message, colorClass) {
+            const div = document.createElement('div');
+            div.innerHTML = `<span class="font-bold ${colorClass}">${sender}:</span> <span class="text-slate-300">${escapeHtml(message)}</span>`;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function appendSystemMessage(message) {
+            const div = document.createElement('div');
+            div.className = 'text-emerald-400 text-center italic';
+            div.innerText = message;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+    </script>
+</body>
+</html>
