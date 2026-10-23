@@ -1,93 +1,424 @@
+```html
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa" dir="rtl" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سینمای دونفره | Private Watch Party</title>
-    <!-- Tailwind CSS CDN -->
+    <title>پاتوق سینما | Private Cinema Watch Party</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- PeerJS CDN برای ارتباط امن P2P -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fdf2f8',
+                            500: '#ec4899',
+                            600: '#db2777',
+                            900: '#831843',
+                            neon: '#ff007f'
+                        },
+                        cyber: {
+                            dark: '#07090e',
+                            card: 'rgba(15, 23, 42, 0.65)',
+                            border: 'rgba(255, 255, 255, 0.08)'
+                        }
+                    },
+                    fontFamily: {
+                        vazir: ['Vazirmatn', 'sans-serif']
+                    },
+                    boxShadow: {
+                        'neon-glow': '0 0 25px -5px rgba(236, 72, 153, 0.4)',
+                        'purple-glow': '0 0 25px -5px rgba(168, 85, 247, 0.4)',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- PeerJS for WebRTC -->
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Vazirmatn Font -->
-    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" />
+
     <style>
-        body { font-family: 'Vazirmatn', sans-serif; }
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background: #07090e;
+            color: #f1f5f9;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glow Background */
+        .ambient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .glow-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.35;
+            animation: float 18s ease-in-out infinite alternate;
+        }
+
+        .orb-1 {
+            top: -10%;
+            right: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, #db2777 0%, transparent 70%);
+        }
+
+        .orb-2 {
+            bottom: -15%;
+            left: -10%;
+            width: 55vw;
+            height: 55vw;
+            background: radial-gradient(circle, #7c3aed 0%, transparent 70%);
+            animation-delay: -9s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(40px, -50px) scale(1.1); }
+            100% { transform: translate(-30px, 30px) scale(0.95); }
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-input {
+            background: rgba(2, 6, 23, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+        }
+
+        .glass-input:focus {
+            border-color: rgba(236, 72, 153, 0.6);
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.2);
+        }
+
+        /* Floating Reaction Hearts */
+        .floating-heart {
+            position: absolute;
+            pointer-events: none;
+            animation: floatUp 2.5s ease-out forwards;
+            font-size: 1.8rem;
+            z-index: 50;
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(0.5) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-80px) scale(1.2) rotate(-15deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-180px) scale(1) rotate(15deg);
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(236, 72, 153, 0.5);
+        }
+
+        /* Video Progress Bar Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background: #ec4899;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -4px;
+            box-shadow: 0 0 10px #ec4899;
+            transition: all 0.2s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.3);
+        }
+
+        .pulse-indicator {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.08); }
+        }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between">
+<body class="min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-white">
 
-    <!-- Header -->
-    <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 p-4 text-center shadow-lg">
-        <h1 class="text-xl font-bold bg-gradient-to-r from-rose-500 to-purple-600 bg-clip-text text-transparent">سینمای اختصاصی پاتوق ❤️</h1>
-        <p class="text-xs text-slate-400 mt-1">ارتباط امن، مستقیم و دونفره</p>
+    <!-- Ambient Glowing Orbs -->
+    <div class="ambient-bg">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-4 lg:px-8 py-3 transition-all duration-300">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-3">
+                <div class="relative flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-600 to-purple-600 shadow-neon-glow">
+                    <i class="fa-solid fa-film text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg lg:text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                        پاتوق <span class="text-brand-500">سینما</span>
+                    </h1>
+                    <p class="text-[10px] text-slate-400 font-medium">تماشای هم‌زمان و اختصاصی از راه دور</p>
+                </div>
+            </div>
+
+            <!-- Status Indicator Badge -->
+            <div class="flex items-center gap-3">
+                <div id="status-badge" class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-xs font-medium text-slate-400 shadow-inner">
+                    <span id="status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                    <span id="status-text">قطع ارتباط</span>
+                </div>
+            </div>
+        </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="flex-1 max-w-4xl w-full mx-auto p-4 flex flex-col gap-6">
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-8 flex flex-col justify-center">
 
-        <!-- Connection Panel -->
-        <div id="setup-panel" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col gap-4">
-            <h2 class="text-lg font-semibold text-rose-400">تنظیم اتصال</h2>
+        <!-- ================= PANEL 1: ROOM SETUP (Tabbed Join/Host) ================= -->
+        <div id="setup-panel" class="max-w-md w-full mx-auto glass-panel rounded-3xl p-6 lg:p-8 shadow-2xl relative overflow-hidden transition-all duration-500">
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Host Box -->
-                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
-                    <div>
-                        <h3 class="font-medium text-sm text-slate-300 mb-2">ساخت اتاق (میزبان)</h3>
-                        <p class="text-xs text-slate-500 mb-4">یک کد دلخواه یا پین‌کد وارد کنید و به پارتنرتان بدهید.</p>
-                        <input type="text" id="host-id-input" placeholder="مثال: love-room-1405" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-rose-500 mb-3">
+            <div class="text-center mb-6">
+                <div class="inline-flex p-3 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-500 mb-3">
+                    <i class="fa-solid fa-heart-circle-bolt text-2xl"></i>
+                </div>
+                <h2 class="text-xl font-bold text-white mb-1">ورود به سینمای دو‌نفره</h2>
+                <p class="text-xs text-slate-400">یک اتاق بسازید یا با پین‌کد به پارتنرتان وصل شوید</p>
+            </div>
+
+            <!-- Tabs Header -->
+            <div class="flex p-1 bg-slate-950/60 rounded-2xl border border-slate-800 mb-6">
+                <button id="tab-btn-create" onclick="switchTab('create')" class="flex-1 py-2.5 text-xs font-semibold rounded-xl transition-all duration-300 bg-brand-600 text-white shadow-lg">
+                    <i class="fa-solid fa-plus-circle ml-1.5"></i> ایجاد اتاق
+                </button>
+                <button id="tab-btn-join" onclick="switchTab('join')" class="flex-1 py-2.5 text-xs font-semibold rounded-xl transition-all duration-300 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-right-to-bracket ml-1.5"></i> پیوستن به اتاق
+                </button>
+            </div>
+
+            <!-- TAB 1: CREATE ROOM -->
+            <div id="tab-content-create" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">شناسه دلخواه اتاق (میزبان)</label>
+                    <div class="relative">
+                        <input type="text" id="host-room-id" placeholder="مثلاً: love-night" class="w-full glass-input rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none pl-10">
+                        <i class="fa-solid fa-key absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
                     </div>
-                    <button onclick="startHosting()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-2 rounded-lg text-sm transition shadow-md shadow-rose-900/40">ایجاد اتاق</button>
                 </div>
 
-                <!-- Guest Box -->
-                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
-                    <div>
-                        <h3 class="font-medium text-sm text-slate-300 mb-2">پیوستن به اتاق (مهمان)</h3>
-                        <p class="text-xs text-slate-500 mb-4">کد اتاقی که پارتنرتان ساخته را اینجا وارد کنید.</p>
-                        <input type="text" id="peer-id-input" placeholder="کد اتاق پارتنر..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-purple-500 mb-3">
+                <button onclick="startHosting()" class="w-full py-3.5 bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-bold text-sm rounded-2xl shadow-neon-glow transition duration-300 flex items-center justify-center gap-2 group">
+                    <span>ساخت اتاق اختصاصی</span>
+                    <i class="fa-solid fa-arrow-left transition-transform group-hover:-translate-x-1"></i>
+                </button>
+            </div>
+
+            <!-- TAB 2: JOIN ROOM -->
+            <div id="tab-content-join" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1.5">شناسه اتاق پارتنر</label>
+                    <div class="relative">
+                        <input type="text" id="join-room-id" placeholder="کد اتاق را اینجا وارد کنید..." class="w-full glass-input rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none pl-10">
+                        <i class="fa-solid fa-plug absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
                     </div>
-                    <button onclick="connectToPeer()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 rounded-lg text-sm transition shadow-md shadow-purple-900/40">اتصال به پارتنر</button>
+                </div>
+
+                <button onclick="connectToPeer()" class="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm rounded-2xl shadow-purple-glow transition duration-300 flex items-center justify-center gap-2 group">
+                    <span>اتصال به پارتنر</span>
+                    <i class="fa-solid fa-heart transition-transform group-hover:scale-125 text-pink-300"></i>
+                </button>
+            </div>
+
+            <!-- Connection Info Box -->
+            <div id="room-share-info" class="hidden mt-6 p-4 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-center">
+                <span class="text-xs text-slate-300 block mb-2">کد اتاق شما آماده است:</span>
+                <div class="flex items-center justify-between bg-slate-950/80 px-3 py-2 rounded-xl border border-slate-800">
+                    <span id="created-code-display" class="font-mono text-sm font-bold text-brand-400 tracking-wider">---</span>
+                    <button onclick="copyRoomCode()" class="text-xs bg-brand-600 hover:bg-brand-500 text-white px-3 py-1.5 rounded-lg transition">
+                        <i class="fa-regular fa-copy ml-1"></i> کپی کد
+                    </button>
                 </div>
             </div>
 
-            <div id="connection-status" class="text-center text-xs text-slate-400 mt-2 py-1 bg-slate-950/40 rounded-lg">وضعیت: قطع شده 🔌</div>
         </div>
 
-        <!-- Theater Panel (Hidden until connected) -->
-        <div id="theater-panel" class="hidden flex flex-col gap-4">
+        <!-- ================= PANEL 2: THEATER & WATCH PARTY (Hidden initially) ================= -->
+        <div id="theater-panel" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             
-            <!-- Host File Picker (Only visible to host if needed, or controls) -->
-            <div id="host-controls" class="hidden bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-3 w-full md:w-auto">
-                    <label class="bg-gradient-to-r from-rose-600 to-pink-600 hover:opacity-90 text-white px-4 py-2 rounded-xl text-sm font-medium cursor-pointer shadow-md transition flex items-center gap-2">
-                        📁 انتخاب فیلم از گوشی
-                        <input type="file" id="video-file-input" accept="video/*" class="hidden">
-                    </label>
-                    <span id="file-name-display" class="text-xs text-slate-400 truncate max-w-xs">فایلی انتخاب نشده است</span>
+            <!-- Left Side: Video Player Section (Spans 2 cols on LG) -->
+            <div class="lg:col-span-2 space-y-4">
+
+                <!-- Host File Selector Header -->
+                <div id="host-file-controls" class="hidden glass-panel p-4 rounded-3xl flex flex-wrap items-center justify-between gap-4 border border-brand-500/20 shadow-lg">
+                    <div class="flex items-center gap-3">
+                        <label class="cursor-pointer bg-gradient-to-r from-brand-600 to-pink-600 hover:opacity-90 text-white font-semibold text-xs px-5 py-3 rounded-2xl shadow-neon-glow transition flex items-center gap-2">
+                            <i class="fa-solid fa-folder-open"></i>
+                            <span>انتخاب فیلم از گوشی / سیستم</span>
+                            <input type="file" id="video-file-input" accept="video/*" class="hidden">
+                        </label>
+                        <span id="file-name-display" class="text-xs text-slate-400 truncate max-w-[180px] md:max-w-xs">فایلی انتخاب نشده</span>
+                    </div>
+                    <span class="text-[11px] bg-brand-500/10 text-brand-400 border border-brand-500/20 px-3 py-1 rounded-full font-medium">
+                        <i class="fa-solid fa-crown text-amber-400 ml-1"></i> شما میزبان هستید
+                    </span>
                 </div>
-                <div class="text-xs text-emerald-400 bg-emerald-950/50 border border-emerald-900 px-3 py-1.5 rounded-lg">شما میزبان هستید (پخش‌کننده اصلی)</div>
+
+                <!-- Guest Notice Bar -->
+                <div id="guest-notice" class="hidden glass-panel p-4 rounded-3xl border border-purple-500/20 text-center text-xs text-purple-300">
+                    <i class="fa-solid fa-wand-magic-sparkles text-purple-400 ml-1.5"></i>
+                    شما متصل هستید. ویدیوی انتخابی میزبان به صورت زنده برای شما استریم می‌شود ✨
+                </div>
+
+                <!-- Custom Video Player Shell -->
+                <div class="relative group bg-slate-950 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl aspect-video flex items-center justify-center">
+                    
+                    <!-- HTML5 Video Tag -->
+                    <video id="media-player" playsinline class="w-full h-full object-contain"></video>
+
+                    <!-- Reaction Floating Overlay Area -->
+                    <div id="reaction-overlay" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+
+                    <!-- Custom Player Controls Bar Overlay -->
+                    <div id="custom-controls" class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col gap-2">
+                        
+                        <!-- Progress Slider Bar -->
+                        <div class="flex items-center gap-3">
+                            <span id="time-current" class="text-[11px] font-mono text-slate-300">00:00</span>
+                            <input type="range" id="seek-bar" min="0" max="100" value="0" step="0.1" class="flex-1">
+                            <span id="time-duration" class="text-[11px] font-mono text-slate-400">00:00</span>
+                        </div>
+
+                        <!-- Buttons Row -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <!-- Play/Pause -->
+                                <button id="btn-play-pause" onclick="togglePlayPause()" class="text-white hover:text-brand-400 text-lg transition w-8 h-8 flex items-center justify-center">
+                                    <i class="fa-solid fa-play"></i>
+                                </button>
+                                <!-- Mute/Volume -->
+                                <div class="flex items-center gap-2 group/vol">
+                                    <button id="btn-mute" onclick="toggleMute()" class="text-slate-300 hover:text-white text-sm">
+                                        <i class="fa-solid fa-volume-high"></i>
+                                    </button>
+                                    <input type="range" id="volume-bar" min="0" max="1" step="0.05" value="1" class="w-16 opacity-70 hover:opacity-100 transition">
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                                <!-- Quick Floating Heart Button for Fun -->
+                                <button onclick="sendHeartReaction()" class="text-rose-500 hover:scale-125 transition-transform text-lg active:scale-95" title="ارسال قلب">
+                                    <i class="fa-solid fa-heart"></i>
+                                </button>
+                                <!-- Fullscreen -->
+                                <button onclick="toggleFullscreen()" class="text-slate-300 hover:text-white text-sm transition">
+                                    <i class="fa-solid fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
             </div>
 
-            <div id="guest-notice" class="hidden text-xs text-purple-400 bg-purple-950/50 border border-purple-900 px-3 py-2 rounded-xl text-center">
-                شما به عنوان مهمان متصل شده‌اید. فیلم به زودی توسط میزبان پخش خواهد شد ✨
-            </div>
-
-            <!-- Video Player Container -->
-            <div class="relative w-full bg-black rounded-2xl overflow-hidden shadow-2xl border border-slate-800 aspect-video flex items-center justify-center">
-                <video id="media-player" controls playsinline class="w-full h-full object-contain"></video>
-            </div>
-
-            <!-- Chat / Interaction Box -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3">
-                <h3 class="text-xs font-semibold text-slate-300">چت دونفره امن</h3>
-                <div id="chat-messages" class="h-28 overflow-y-auto bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex flex-col gap-2 text-xs">
-                    <div class="text-slate-500 text-center">ارتباط چت آماده است...</div>
+            <!-- Right Side: Luxury Live Chat Panel -->
+            <div class="lg:col-span-1 glass-panel rounded-3xl p-4 lg:p-5 flex flex-col h-[480px] lg:h-[530px] border border-slate-800 shadow-2xl">
+                
+                <!-- Chat Header -->
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-comments text-brand-500 text-sm"></i>
+                        <h3 class="text-xs font-bold text-white">گفتگوی دونفره</h3>
+                    </div>
+                    <span class="text-[10px] text-slate-500 flex items-center gap-1">
+                        <i class="fa-solid fa-shield-halved text-emerald-400"></i> رمزنگاری P2P
+                    </span>
                 </div>
-                <div class="flex gap-2">
-                    <input type="text" id="chat-input" placeholder="پیام خود را بنویسید..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-rose-500" onkeypress="handleChatKey(event)">
-                    <button onclick="sendChatMessage()" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl text-xs font-medium transition">ارسال</button>
+
+                <!-- Messages Scroll Area -->
+                <div id="chat-messages" class="flex-1 overflow-y-auto my-3 space-y-3 pr-1 text-xs">
+                    <div class="text-center text-slate-500 text-[11px] my-4 italic">
+                        به اتاق چت امن خوش آمدید ❤️
+                    </div>
                 </div>
+
+                <!-- Typing Indicator Badge -->
+                <div id="typing-indicator" class="h-4 text-[10px] text-brand-400 italic mb-1 opacity-0 transition-opacity flex items-center gap-1">
+                    <i class="fa-solid fa-circle text-[6px] animate-ping"></i> پارتنر در حال تایپ است...
+                </div>
+
+                <!-- Emoji Reactions Bar -->
+                <div class="flex items-center justify-around py-2 px-1 bg-slate-950/40 rounded-2xl border border-slate-800/60 mb-2">
+                    <button onclick="sendEmojiReaction('❤️')" class="hover:scale-125 transition text-base">❤️</button>
+                    <button onclick="sendEmojiReaction('😂')" class="hover:scale-125 transition text-base">😂</button>
+                    <button onclick="sendEmojiReaction('😮')" class="hover:scale-125 transition text-base">😮</button>
+                    <button onclick="sendEmojiReaction('😭')" class="hover:scale-125 transition text-base">😭</button>
+                    <button onclick="sendEmojiReaction('🔥')" class="hover:scale-125 transition text-base">🔥</button>
+                    <button onclick="sendEmojiReaction('🍿')" class="hover:scale-125 transition text-base">🍿</button>
+                </div>
+
+                <!-- Input Box -->
+                <div class="flex items-center gap-2">
+                    <input type="text" id="chat-input" placeholder="پیام شما..." class="flex-1 glass-input rounded-2xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none" onkeypress="handleChatKey(event)" oninput="notifyTyping()">
+                    <button onclick="sendChatMessage()" class="bg-brand-600 hover:bg-brand-500 text-white w-9 h-9 rounded-2xl flex items-center justify-center shadow-neon-glow transition flex-shrink-0">
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </div>
+
             </div>
 
         </div>
@@ -95,130 +426,175 @@
     </main>
 
     <!-- Footer -->
-    <footer class="text-center py-4 text-xs text-slate-600">
-        ساخته شده با عشق برای تماشای دورهمی ❤️
+    <footer class="py-4 text-center text-slate-600 text-[11px] font-medium border-t border-slate-900">
+        طراحی‌شده با نهایت زیبایی برای لحظات مشترک شما ✨
     </footer>
 
-    <!-- App Logic Script -->
+    <!-- App Javascript Logic -->
     <script>
-        let peer;
-        let conn;
+        // State Global Variables
+        let peer = null;
+        let conn = null;
         let localStream = null;
-        let currentPeerId = null;
         let isHost = false;
+        let typingTimeout = null;
 
-        const statusEl = document.getElementById('connection-status');
+        // Elements Ref
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
         const setupPanel = document.getElementById('setup-panel');
         const theaterPanel = document.getElementById('theater-panel');
-        const hostControls = document.getElementById('host-controls');
+        const hostFileControls = document.getElementById('host-file-controls');
         const guestNotice = document.getElementById('guest-notice');
         const mediaPlayer = document.getElementById('media-player');
         const fileInput = document.getElementById('video-file-input');
         const fileNameDisplay = document.getElementById('file-name-display');
         const chatMessages = document.getElementById('chat-messages');
         const chatInput = document.getElementById('chat-input');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const seekbar = document.getElementById('seek-bar');
+        const volumeBar = document.getElementById('volume-bar');
 
-        function updateStatus(text, colorClass = 'text-slate-400') {
-            statusEl.className = `text-center text-xs mt-2 py-1 bg-slate-950/40 rounded-lg ${colorClass}`;
-            statusEl.innerText = `وضعیت: ${text}`;
+        // Tab Switching Logic
+        function switchTab(tab) {
+            const btnCreate = document.getElementById('tab-btn-create');
+            const btnJoin = document.getElementById('tab-btn-join');
+            const contentCreate = document.getElementById('tab-content-create');
+            const contentJoin = document.getElementById('tab-content-join');
+
+            if (tab === 'create') {
+                btnCreate.className = "flex-1 py-2.5 text-xs font-semibold rounded-xl transition-all duration-300 bg-brand-600 text-white shadow-lg";
+                btnJoin.className = "flex-1 py-2.5 text-xs font-semibold rounded-xl transition-all duration-300 text-slate-400 hover:text-white";
+                contentCreate.classList.remove('hidden');
+                contentJoin.classList.add('hidden');
+            } else {
+                btnJoin.className = "flex-1 py-2.5 text-xs font-semibold rounded-xl transition-all duration-300 bg-purple-600 text-white shadow-lg";
+                btnCreate.className = "flex-1 py-2.5 text-xs font-semibold rounded-xl transition-all duration-300 text-slate-400 hover:text-white";
+                contentJoin.classList.remove('hidden');
+                contentCreate.classList.add('hidden');
+            }
         }
 
+        // Status Indicator Helper
+        function setStatus(text, state = 'disconnected') {
+            statusText.innerText = text;
+            if (state === 'online') {
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-indicator shadow-[0_0_8px_#10b981]";
+            } else if (state === 'connecting') {
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 pulse-indicator";
+            } else {
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-slate-500";
+            }
+        }
+
+        // PeerJS Host Initialization
         function startHosting() {
-            const customId = document.getElementById('host-id-input').value.trim();
-            if (!customId) {
-                alert('لطفاً یک کد یا نام برای اتاق وارد کنید.');
+            const rawId = document.getElementById('host-room-id').value.trim();
+            if (!rawId) {
+                alert('لطفاً یک شناسه برای اتاق وارد کنید.');
                 return;
             }
 
             isHost = true;
-            updateStatus('در حال راه‌اندازی اتاق...', 'text-yellow-400');
+            setStatus('در حال راه‌اندازی سرور اختصاصی...', 'connecting');
 
-            // ساخت Peer با یک پیشوند اختصاصی برای جلوگیری از تداخل
-            peer = new Peer('private-cinema-' + customId);
+            const fullRoomId = 'patogh-cinema-' + rawId;
+            peer = new Peer(fullRoomId);
 
             peer.on('open', (id) => {
-                updateStatus(`اتاق با موفقیت ساخته شد! کد اتاق را به پارتنرتان بدهید: ${customId}`, 'text-emerald-400');
-                setupPanel.classList.add('hidden');
-                theaterPanel.classList.remove('hidden');
-                hostControls.classList.remove('hidden');
+                setStatus('منتظر اتصال پارتنر...', 'connecting');
+                document.getElementById('room-share-info').classList.remove('hidden');
+                document.getElementById('created-code-display').innerText = rawId;
             });
 
             peer.on('connection', (connection) => {
                 conn = connection;
-                setupDataConnection();
-                appendSystemMessage('پارتنر شما به اتاق متصل شد! ❤️');
+                setupDataChannel();
+                onPartnerConnected();
             });
 
             peer.on('call', (call) => {
-                // میزبان کال دریافت نمی‌کند، مهمان کال دریافت می‌کند
-                call.answer();
+                call.answer(); // Host answers if needed
             });
 
             peer.on('error', (err) => {
-                alert('خطا در اتصال: ' + err.type);
-                updateStatus('خطا در اتصال', 'text-rose-500');
+                alert('خطا در ایجاد اتاق: ' + err.type);
+                setStatus('خطا در اتاق', 'disconnected');
             });
         }
 
+        // PeerJS Guest Connect
         function connectToPeer() {
-            const remoteId = document.getElementById('peer-id-input').value.trim();
-            if (!remoteId) {
-                alert('لطفاً کد اتاق پارتنرتان را وارد کنید.');
+            const rawId = document.getElementById('join-room-id').value.trim();
+            if (!rawId) {
+                alert('لطفاً شناسه اتاق پارتنر را وارد کنید.');
                 return;
             }
 
             isHost = false;
-            updateStatus('در حال اتصال به اتاق پارتنر...', 'text-yellow-400');
+            setStatus('در حال اتصال به پارتنر...', 'connecting');
 
-            // ایجاد یک peer تصادفی برای مهمان
             peer = new Peer();
 
-            peer.on('open', (id) => {
-                currentPeerId = 'private-cinema-' + remoteId;
-                
-                // برقراری ارتباط داده (Data Connection)
-                conn = peer.connect(currentPeerId);
-                setupDataConnection();
+            peer.on('open', () => {
+                const targetId = 'patogh-cinema-' + rawId;
+                conn = peer.connect(targetId);
+                setupDataChannel();
 
-                // برقراری تماس صوتی/تصویری (Media Stream Call)
-                const call = peer.call(currentPeerId, new MediaStream());
-                
+                // Call Stream
+                const call = peer.call(targetId, new MediaStream());
                 call.on('stream', (remoteStream) => {
                     mediaPlayer.srcObject = remoteStream;
-                    mediaPlayer.play().catch(e => console.log("Auto-play blocked:", e));
+                    mediaPlayer.play().catch(e => console.log('Auto play waiting user action'));
                 });
 
-                setupPanel.classList.add('hidden');
-                theaterPanel.classList.remove('hidden');
-                guestNotice.classList.remove('hidden');
-                updateStatus('به پارتنرتان متصل شدید! ✨', 'text-emerald-400');
-                appendSystemMessage('به اتاق متصل شدید.');
+                onPartnerConnected();
             });
 
             peer.on('error', (err) => {
-                alert('اتاق پیدا نشد یا کد اشتباه است.');
-                updateStatus('خطا در اتصال به اتاق', 'text-rose-500');
+                alert('اتاق یافت نشد یا کد اشتباه است.');
+                setStatus('خطا در اتصال', 'disconnected');
             });
         }
 
-        function setupDataConnection() {
-            conn.on('open', () => {
-                console.log('Data connection established');
-            });
+        function onPartnerConnected() {
+            setStatus('متصل شد ❤️', 'online');
+            setupPanel.classList.add('hidden');
+            theaterPanel.classList.remove('hidden');
 
+            if (isHost) {
+                hostFileControls.classList.remove('hidden');
+            } else {
+                guestNotice.classList.remove('hidden');
+            }
+
+            appendSystemMessage('پارتنر شما متصل شد! فیلم را انتخاب و تماشا کنید.');
+        }
+
+        // Data Channel Handlers (Chat & Video Sync)
+        function setupDataChannel() {
             conn.on('data', (data) => {
                 if (data.type === 'chat') {
-                    appendChatMessage('پارتنر', data.message, 'text-purple-400');
+                    appendChatMessage('پارتنر', data.message, false);
+                } else if (data.type === 'typing') {
+                    showTypingIndicator();
+                } else if (data.type === 'heart') {
+                    triggerFloatingHeart();
                 } else if (data.type === 'sync' && !isHost) {
-                    // همگام‌سازی کنترل‌های پخش برای مهمان
+                    // Sync Player for Guest
                     if (data.action === 'play') mediaPlayer.play();
                     if (data.action === 'pause') mediaPlayer.pause();
                     if (data.action === 'seek') mediaPlayer.currentTime = data.time;
                 }
             });
+
+            conn.on('close', () => {
+                setStatus('پارتنر قطع شد', 'disconnected');
+                appendSystemMessage('ارتباط پارتنر قطع شد.');
+            });
         }
 
-        // مدیریت انتخاب فایل توسط میزبان
+        // Local Video File Input Handler (Host Only)
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -228,7 +604,6 @@
             mediaPlayer.src = fileURL;
             mediaPlayer.load();
 
-            // گرفتن استریم ویدیویی از تگ ویدیو برای ارسال به پارتنر
             setTimeout(() => {
                 if (mediaPlayer.captureStream) {
                     localStream = mediaPlayer.captureStream();
@@ -236,35 +611,78 @@
                     localStream = mediaPlayer.mozCaptureStream();
                 }
 
-                // وقتی مهمان تماس برقرار کرد یا متصل شد، استریم را ارسال می‌کنیم
                 peer.on('call', (call) => {
                     call.answer(localStream);
                 });
             }, 500);
         });
 
-        // همگام‌سازی کنترل‌های پخش میزبان با مهمان
-        if (isHost) {
-            mediaPlayer.addEventListener('play', () => {
-                if (conn && conn.open) conn.send({ type: 'sync', action: 'play' });
-            });
-            mediaPlayer.addEventListener('pause', () => {
-                if (conn && conn.open) conn.send({ type: 'sync', action: 'pause' });
-            });
-            mediaPlayer.addEventListener('seeked', () => {
-                if (conn && conn.open) conn.send({ type: 'sync', action: 'seek', time: mediaPlayer.currentTime });
-            });
+        // Video Player Custom Controls Sync Logic
+        function togglePlayPause() {
+            if (mediaPlayer.paused) {
+                mediaPlayer.play();
+            } else {
+                mediaPlayer.pause();
+            }
         }
 
-        // چت درون‌برنامه‌ای
+        mediaPlayer.addEventListener('play', () => {
+            document.getElementById('btn-play-pause').innerHTML = '<i class="fa-solid fa-pause"></i>';
+            if (isHost && conn) conn.send({ type: 'sync', action: 'play' });
+        });
+
+        mediaPlayer.addEventListener('pause', () => {
+            document.getElementById('btn-play-pause').innerHTML = '<i class="fa-solid fa-play"></i>';
+            if (isHost && conn) conn.send({ type: 'sync', action: 'pause' });
+        });
+
+        mediaPlayer.addEventListener('timeupdate', () => {
+            const cur = mediaPlayer.currentTime || 0;
+            const dur = mediaPlayer.duration || 1;
+            seekbar.value = (cur / dur) * 100;
+            document.getElementById('time-current').innerText = formatTime(cur);
+            document.getElementById('time-duration').innerText = formatTime(dur);
+        });
+
+        seekbar.addEventListener('input', () => {
+            const dur = mediaPlayer.duration || 1;
+            const newTime = (seekbar.value / 100) * dur;
+            mediaPlayer.currentTime = newTime;
+            if (isHost && conn) conn.send({ type: 'sync', action: 'seek', time: newTime });
+        });
+
+        volumeBar.addEventListener('input', (e) => {
+            mediaPlayer.volume = e.target.value;
+        });
+
+        function toggleMute() {
+            mediaPlayer.muted = !mediaPlayer.muted;
+            document.getElementById('btn-mute').innerHTML = mediaPlayer.muted ? 
+                '<i class="fa-solid fa-volume-xmark text-rose-500"></i>' : 
+                '<i class="fa-solid fa-volume-high"></i>';
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                mediaPlayer.parentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+        }
+
+        // Chat UI System
         function sendChatMessage() {
             const text = chatInput.value.trim();
             if (!text) return;
 
-            appendChatMessage('شما', text, 'text-rose-400');
-            if (conn && conn.open) {
-                conn.send({ type: 'chat', message: text });
-            }
+            appendChatMessage('شما', text, true);
+            if (conn) conn.send({ type: 'chat', message: text });
             chatInput.value = '';
         }
 
@@ -272,24 +690,67 @@
             if (e.key === 'Enter') sendChatMessage();
         }
 
-        function appendChatMessage(sender, message, colorClass) {
+        function sendEmojiReaction(emoji) {
+            chatInput.value += emoji;
+            chatInput.focus();
+        }
+
+        function notifyTyping() {
+            if (conn) conn.send({ type: 'typing' });
+        }
+
+        function showTypingIndicator() {
+            typingIndicator.style.opacity = '1';
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                typingIndicator.style.opacity = '0';
+            }, 2000);
+        }
+
+        function appendChatMessage(sender, msg, isSelf) {
+            const wrap = document.createElement('div');
+            wrap.className = `flex flex-col ${isSelf ? 'items-start' : 'items-end'}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = `max-w-[80%] p-3 rounded-2xl ${isSelf ? 'bg-gradient-to-r from-brand-600 to-pink-600 text-white rounded-tr-none' : 'bg-slate-800 text-slate-200 rounded-tl-none border border-slate-700'}`;
+            bubble.innerText = msg;
+
+            wrap.appendChild(bubble);
+            chatMessages.appendChild(wrap);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function appendSystemMessage(msg) {
             const div = document.createElement('div');
-            div.innerHTML = `<span class="font-bold ${colorClass}">${sender}:</span> <span class="text-slate-300">${escapeHtml(message)}</span>`;
+            div.className = "text-center text-[11px] text-brand-400 bg-brand-500/10 py-1.5 px-3 rounded-xl my-2 border border-brand-500/20";
+            div.innerText = msg;
             chatMessages.appendChild(div);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        function appendSystemMessage(message) {
-            const div = document.createElement('div');
-            div.className = 'text-emerald-400 text-center italic';
-            div.innerText = message;
-            chatMessages.appendChild(div);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+        // Floating Hearts Animations
+        function sendHeartReaction() {
+            triggerFloatingHeart();
+            if (conn) conn.send({ type: 'heart' });
         }
 
-        function escapeHtml(text) {
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        function triggerFloatingHeart() {
+            const overlay = document.getElementById('reaction-overlay');
+            const heart = document.createElement('div');
+            heart.className = 'floating-heart fa-solid fa-heart text-rose-500';
+            heart.style.left = Math.random() * 80 + 10 + '%';
+            heart.style.bottom = '10%';
+            overlay.appendChild(heart);
+
+            setTimeout(() => heart.remove(), 2500);
+        }
+
+        function copyRoomCode() {
+            const code = document.getElementById('created-code-display').innerText;
+            navigator.clipboard.writeText(code);
+            alert('کد اتاق کپی شد!');
         }
     </script>
 </body>
 </html>
+```
